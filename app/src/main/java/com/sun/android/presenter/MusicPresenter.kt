@@ -7,6 +7,12 @@ import com.sun.android.model.Song.MusicModel
 import com.sun.android.service.MusicService
 import com.sun.android.view.MainActivity
 import com.sun.android.view.MusicView
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.ContextWrapper
+import android.os.Build
+import androidx.annotation.RequiresApi
 
 class MusicPresenter(private val context: Context, private val view: MusicView, private val model: MusicModel){
     private var isPlaying = false
@@ -39,16 +45,44 @@ class MusicPresenter(private val context: Context, private val view: MusicView, 
 
     fun togglePlayPause(){
         if (isPlaying){
-            stopService()
+            sendPauseToService()
             view.updatePlayButton(false)
         }else if (currentSong != null){
-            startMusicServiceWithSong(currentSong!!)
+            sendPlayToService()
             view.updatePlayButton(true)
         }
         isPlaying = !isPlaying
     }
 
+    private fun sendPlayToService() {
+        val intent = Intent(context, MusicService::class.java)
+        intent.action = "ACTION_PLAY"
+        context.startService(intent)
+    }
+
+    private fun sendPauseToService() {
+        val intent = Intent(context, MusicService::class.java)
+        intent.action = "ACTION_PAUSE"
+        context.startService(intent)
+    }
+
     private fun stopService() {
         context.stopService(serviceIntent)
+    }
+
+    fun seekTo(position: Int) {
+        val intent = Intent(context, MusicService::class.java)
+        intent.action = "ACTION_SEEK_TO"
+        intent.putExtra("seekTo", position)
+        context.startService(intent)
+    }
+
+    fun playNextSong() {
+        val songs = model.getSongList()
+        val currentIndex = songs.indexOf(currentSong)
+        if (currentIndex != -1 && currentIndex < songs.size - 1) {
+            val nextSong = songs[currentIndex + 1]
+            onSongSelected(nextSong)
+        }
     }
 }
