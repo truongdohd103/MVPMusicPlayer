@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.MediaPlayer
 import android.os.IBinder
 import com.sun.android.view.MainActivity
@@ -45,7 +46,15 @@ class MusicService : Service(){
         val artist = intent?.getStringExtra("artist") ?: "Unknown"
         val imageResId = intent?.getIntExtra("imageResId", R.drawable.default_img) ?: R.drawable.default_img
         Log.d("MusicService", "Received: resourceId=$resourceId, title=$title, artist=$artist, imageResId=$imageResId")
-        startForeground(1, buildNotification(title, artist, imageResId))
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            startForeground(
+                1,
+                buildNotification(title, artist, imageResId),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK // FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(1, buildNotification(title, artist, imageResId))
+        }
         playMusic(resourceId)
         return START_NOT_STICKY
     }
