@@ -21,6 +21,7 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.RequiresApi
 
 class MainActivity : AppCompatActivity(), MusicView {
     private lateinit var recyclerView: RecyclerView
@@ -93,6 +94,7 @@ class MainActivity : AppCompatActivity(), MusicView {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onStart() {
         super.onStart()
         if (progressReceiver == null) {
@@ -116,7 +118,7 @@ class MainActivity : AppCompatActivity(), MusicView {
             val filter = IntentFilter()
             filter.addAction("com.sun.android.ACTION_UPDATE_PROGRESS")
             filter.addAction("com.sun.android.ACTION_NEXT_SONG")
-            registerReceiver(progressReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(progressReceiver, filter, RECEIVER_NOT_EXPORTED)
         }
     }
 

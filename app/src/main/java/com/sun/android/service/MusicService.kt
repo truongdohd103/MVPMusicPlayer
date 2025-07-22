@@ -17,6 +17,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
+import android.os.Build
 
 class MusicService : Service(){
     private var mediaPlayer: MediaPlayer? = null
@@ -25,6 +26,10 @@ class MusicService : Service(){
     private val handler = Handler(Looper.getMainLooper())
     private val updateInterval = 500L // ms
     private var currentResourceId: Int? = null
+    // Thêm các biến toàn cục để lưu thông tin bài hát hiện tại
+    private var currentTitle: String = ""
+    private var currentArtist: String = ""
+    private var currentImageResId: Int = R.drawable.default_img
     private val updateRunnable = object : Runnable {
         override fun run() {
             mediaPlayer?.let {
@@ -46,7 +51,7 @@ class MusicService : Service(){
     }
 
     private fun createNotificationChannel() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
                 "Music Channel",
@@ -60,16 +65,19 @@ class MusicService : Service(){
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("MusicService", "onStartCommand called")
+        val current = mediaPlayer?.currentPosition ?: 0
+        val duration = mediaPlayer?.duration ?: 0
         when (intent?.action) {
             "ACTION_SEEK_TO" -> {
                 val seekTo = intent.getIntExtra("seekTo", 0)
                 val wasPlaying = mediaPlayer?.isPlaying == true
                 mediaPlayer?.seekTo(seekTo)
                 if (wasPlaying) mediaPlayer?.start()
+                updateNotification()
                 return START_NOT_STICKY
             }
             "ACTION_SEEK_FROM_NOTIFICATION" -> {
-                val seekTo = intent.getIntExtra(androidx.core.app.NotificationCompat.EXTRA_PROGRESS, 0)
+                val seekTo = intent.getIntExtra(NotificationCompat.EXTRA_PROGRESS, 0)
                 val wasPlaying = mediaPlayer?.isPlaying == true
                 mediaPlayer?.seekTo(seekTo)
                 if (wasPlaying) mediaPlayer?.start()
@@ -78,11 +86,13 @@ class MusicService : Service(){
             }
             "ACTION_PLAY" -> {
                 mediaPlayer?.start()
+                Log.d("MusicService", "ACTION_PLAY: isPlaying=" + (mediaPlayer?.isPlaying == true))
                 updateNotification()
                 return START_NOT_STICKY
             }
             "ACTION_PAUSE" -> {
                 mediaPlayer?.pause()
+                Log.d("MusicService", "ACTION_PAUSE: isPlaying=" + (mediaPlayer?.isPlaying == true))
                 updateNotification()
                 return START_NOT_STICKY
             }
@@ -105,17 +115,22 @@ class MusicService : Service(){
         val imageResId = intent?.getIntExtra("imageResId", R.drawable.default_img) ?: R.drawable.default_img
         Log.d("MusicService", "Received: resourceId=$resourceId, title=$title, artist=$artist, imageResId=$imageResId")
         if (resourceId != -1 && resourceId != currentResourceId) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // Lưu lại thông tin bài hát hiện tại
+            currentTitle = title
+            currentArtist = artist
+            currentImageResId = imageResId
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
                     1,
-                    buildNotification(title, artist, imageResId),
+                    buildNotification(currentTitle, currentArtist, currentImageResId, current, duration, mediaPlayer?.isPlaying == true),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 )
             } else {
-                startForeground(1, buildNotification(title, artist, imageResId))
+                startForeground(1, buildNotification(currentTitle, currentArtist, currentImageResId, current, duration, mediaPlayer?.isPlaying == true))
             }
             playMusic(resourceId)
             currentResourceId = resourceId
+            updateNotification() // <-- Thêm dòng này!
         } else {
             updateNotification()
         }
@@ -143,17 +158,16 @@ class MusicService : Service(){
     }
 
     private fun updateNotification() {
-        val title = "" // Có thể lưu lại title hiện tại nếu cần
-        val artist = "" // Có thể lưu lại artist hiện tại nếu cần
-        val imageResId = R.drawable.default_img // Có thể lưu lại imageResId hiện tại nếu cần
+        val isPlaying = mediaPlayer?.isPlaying == true
+        Log.d("MusicService", "updateNotification: isPlaying=$isPlaying")
         val current = mediaPlayer?.currentPosition ?: 0
         val duration = mediaPlayer?.duration ?: 0
-        val notification = buildNotification(title, artist, imageResId, current, duration)
+        val notification = buildNotification(currentTitle, currentArtist, currentImageResId, current, duration, isPlaying)
         notitficationManager.notify(1, notification)
     }
 
     @SuppressLint("NewApi")
-    private fun buildNotification(title: String, artist: String, imageResId: Int, current: Int = 0, duration: Int = 0): Notification {
+    private fun buildNotification(title: String, artist: String, imageResId: Int, current: Int, duration: Int, isPlaying: Boolean = false): Notification {
         Log.d("MusicService", "buildNotification called with title=$title, artist=$artist, imageResId=$imageResId")
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -167,12 +181,12 @@ class MusicService : Service(){
         val prevIntent = Intent(this, MusicService::class.java).setAction("ACTION_PREV")
         val prevPendingIntent = PendingIntent.getService(this, 4, prevIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-        val isPlaying = mediaPlayer?.isPlaying == true
         val playPauseAction = if (isPlaying)
             NotificationCompat.Action(R.drawable.ic_pause, "Pause", pausePendingIntent)
         else
             NotificationCompat.Action(R.drawable.ic_play, "Play", playPendingIntent)
 
+        // Sử dụng NotificationCompat.Builder cho tất cả các phiên bản Android
         val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(title)
             .setContentText(artist)
@@ -187,9 +201,12 @@ class MusicService : Service(){
                 MediaStyle()
                     .setShowActionsInCompactView(0, 1, 2)
             )
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && duration > 0) {
+
+        // Thêm thanh tiến trình nếu duration > 0
+        if (duration > 0) {
             builder.setProgress(duration, current, false)
         }
+
         return builder.build()
     }
 

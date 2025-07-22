@@ -5,14 +5,8 @@ import android.content.Intent
 import com.sun.android.model.Song
 import com.sun.android.model.Song.MusicModel
 import com.sun.android.service.MusicService
-import com.sun.android.view.MainActivity
 import com.sun.android.view.MusicView
-import android.content.BroadcastReceiver
-import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.content.ContextWrapper
-import android.os.Build
-import androidx.annotation.RequiresApi
+
 
 class MusicPresenter(private val context: Context, private val view: MusicView, private val model: MusicModel){
     private var isPlaying = false
