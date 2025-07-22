@@ -80,9 +80,20 @@ class MusicPresenter(private val context: Context, private val view: MusicView, 
     fun playNextSong() {
         val songs = model.getSongList()
         val currentIndex = songs.indexOf(currentSong)
-        if (currentIndex != -1 && currentIndex < songs.size - 1) {
-            val nextSong = songs[currentIndex + 1]
+        if (songs.isNotEmpty()) {
+            val nextIndex = if (currentIndex == -1 || currentIndex == songs.size - 1) 0 else currentIndex + 1
+            val nextSong = songs[nextIndex]
             onSongSelected(nextSong)
+        }
+    }
+
+    fun playPrevSong() {
+        val songs = model.getSongList()
+        val currentIndex = songs.indexOf(currentSong)
+        if (songs.isNotEmpty()) {
+            val prevIndex = if (currentIndex == -1 || currentIndex == 0) songs.size - 1 else currentIndex - 1
+            val prevSong = songs[prevIndex]
+            onSongSelected(prevSong)
         }
     }
 }

@@ -25,6 +25,8 @@ import android.os.Looper
 class MainActivity : AppCompatActivity(), MusicView {
     private lateinit var recyclerView: RecyclerView
     private lateinit var btnPlayPause: ImageView
+    private lateinit var btnNext: ImageView
+    private lateinit var btnPrev: ImageView
     private lateinit var presenter: MusicPresenter
     private lateinit var adapter: MusicAdapter
     private lateinit var tvCurrentSong: TextView
@@ -51,6 +53,8 @@ class MainActivity : AppCompatActivity(), MusicView {
 
         recyclerView = findViewById(R.id.recyclerView)
         btnPlayPause = findViewById(R.id.btnPlayPause)
+        btnNext = findViewById(R.id.btnNext)
+        btnPrev = findViewById(R.id.btnPrev)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = MusicAdapter(emptyList()) { song -> presenter.onSongSelected(song) }
         recyclerView.adapter = adapter
@@ -80,6 +84,12 @@ class MainActivity : AppCompatActivity(), MusicView {
 
         btnPlayPause.setOnClickListener {
             presenter.togglePlayPause()
+        }
+        btnNext.setOnClickListener {
+            presenter.playNextSong()
+        }
+        btnPrev.setOnClickListener {
+            presenter.playPrevSong()
         }
     }
 

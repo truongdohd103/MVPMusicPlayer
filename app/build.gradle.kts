@@ -89,6 +89,7 @@ dependencies {
     implementation(Deps.appcompat)
     implementation(Deps.material)
     implementation(Deps.constraint_layout)
+    implementation("androidx.media:media:1.6.0")
 
     testImplementation(Deps.junit)
     testImplementation(Deps.mockk)

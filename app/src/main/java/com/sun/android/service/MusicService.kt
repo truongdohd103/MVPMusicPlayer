@@ -15,7 +15,8 @@ import com.sun.structure_android.R
 import android.util.Log
 import android.os.Handler
 import android.os.Looper
-import android.media.MediaPlayer.OnCompletionListener
+import androidx.core.app.NotificationCompat
+import androidx.media.app.NotificationCompat.MediaStyle
 
 class MusicService : Service(){
     private var mediaPlayer: MediaPlayer? = null
@@ -67,12 +68,34 @@ class MusicService : Service(){
                 if (wasPlaying) mediaPlayer?.start()
                 return START_NOT_STICKY
             }
+            "ACTION_SEEK_FROM_NOTIFICATION" -> {
+                val seekTo = intent.getIntExtra(androidx.core.app.NotificationCompat.EXTRA_PROGRESS, 0)
+                val wasPlaying = mediaPlayer?.isPlaying == true
+                mediaPlayer?.seekTo(seekTo)
+                if (wasPlaying) mediaPlayer?.start()
+                updateNotification()
+                return START_NOT_STICKY
+            }
             "ACTION_PLAY" -> {
                 mediaPlayer?.start()
+                updateNotification()
                 return START_NOT_STICKY
             }
             "ACTION_PAUSE" -> {
                 mediaPlayer?.pause()
+                updateNotification()
+                return START_NOT_STICKY
+            }
+            "ACTION_NEXT" -> {
+                val intentNext = Intent("com.sun.android.ACTION_NEXT_SONG")
+                intentNext.setPackage(packageName)
+                sendBroadcast(intentNext)
+                return START_NOT_STICKY
+            }
+            "ACTION_PREV" -> {
+                val intentPrev = Intent("com.sun.android.ACTION_PREV_SONG")
+                intentPrev.setPackage(packageName)
+                sendBroadcast(intentPrev)
                 return START_NOT_STICKY
             }
         }
@@ -93,6 +116,8 @@ class MusicService : Service(){
             }
             playMusic(resourceId)
             currentResourceId = resourceId
+        } else {
+            updateNotification()
         }
         handler.post(updateRunnable)
         return START_NOT_STICKY
@@ -117,18 +142,55 @@ class MusicService : Service(){
         mediaPlayer?.start()
     }
 
+    private fun updateNotification() {
+        val title = "" // Có thể lưu lại title hiện tại nếu cần
+        val artist = "" // Có thể lưu lại artist hiện tại nếu cần
+        val imageResId = R.drawable.default_img // Có thể lưu lại imageResId hiện tại nếu cần
+        val current = mediaPlayer?.currentPosition ?: 0
+        val duration = mediaPlayer?.duration ?: 0
+        val notification = buildNotification(title, artist, imageResId, current, duration)
+        notitficationManager.notify(1, notification)
+    }
+
     @SuppressLint("NewApi")
-    private fun buildNotification(title: String, artist: String, imageResId: Int): Notification {
+    private fun buildNotification(title: String, artist: String, imageResId: Int, current: Int = 0, duration: Int = 0): Notification {
         Log.d("MusicService", "buildNotification called with title=$title, artist=$artist, imageResId=$imageResId")
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        return Notification.Builder(this, channelId)
+
+        val playIntent = Intent(this, MusicService::class.java).setAction("ACTION_PLAY")
+        val playPendingIntent = PendingIntent.getService(this, 1, playIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val pauseIntent = Intent(this, MusicService::class.java).setAction("ACTION_PAUSE")
+        val pausePendingIntent = PendingIntent.getService(this, 2, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val nextIntent = Intent(this, MusicService::class.java).setAction("ACTION_NEXT")
+        val nextPendingIntent = PendingIntent.getService(this, 3, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val prevIntent = Intent(this, MusicService::class.java).setAction("ACTION_PREV")
+        val prevPendingIntent = PendingIntent.getService(this, 4, prevIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+        val isPlaying = mediaPlayer?.isPlaying == true
+        val playPauseAction = if (isPlaying)
+            NotificationCompat.Action(R.drawable.ic_pause, "Pause", pausePendingIntent)
+        else
+            NotificationCompat.Action(R.drawable.ic_play, "Play", playPendingIntent)
+
+        val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(title)
             .setContentText(artist)
             .setSmallIcon(imageResId)
             .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .build()
+            .setOnlyAlertOnce(true)
+            .setOngoing(isPlaying)
+            .addAction(R.drawable.ic_prev, "Previous", prevPendingIntent)
+            .addAction(playPauseAction)
+            .addAction(R.drawable.ic_next, "Next", nextPendingIntent)
+            .setStyle(
+                MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && duration > 0) {
+            builder.setProgress(duration, current, false)
+        }
+        return builder.build()
     }
 
     override fun onDestroy() {
