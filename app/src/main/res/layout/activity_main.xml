@@ -11,8 +11,7 @@
     <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
             android:padding="8dp"
             android:clipToPadding="false"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
@@ -38,6 +37,7 @@
                 android:background="@drawable/gradient_background">
 
             <ImageView
+                    android:id="@+id/imgCurrentSong"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:src="@drawable/ic_headphone"
