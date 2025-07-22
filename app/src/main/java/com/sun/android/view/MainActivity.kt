@@ -13,6 +13,9 @@ import com.sun.structure_android.R
 import android.widget.TextView
 import android.widget.ImageView
 import android.content.Context
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
 
 class MainActivity : AppCompatActivity(), MusicView {
     private lateinit var recyclerView: RecyclerView
@@ -26,6 +29,13 @@ class MainActivity : AppCompatActivity(), MusicView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Xin quyền POST_NOTIFICATIONS cho Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+            }
+        }
 
         recyclerView = findViewById(R.id.recyclerView)
         btnPlayPause = findViewById(R.id.btnPlayPause)

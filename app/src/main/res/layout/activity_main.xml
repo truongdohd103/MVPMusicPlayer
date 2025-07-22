@@ -42,7 +42,6 @@
                     android:layout_height="40dp"
                     android:src="@drawable/ic_headphone"
                     android:contentDescription="Current Song Icon"
-                    android:tint="#FFFFFF"
                     android:scaleType="centerInside"
                     tools:ignore="UseAppTint" />
 
@@ -76,6 +75,20 @@
                         android:maxLines="1"
                         android:ellipsize="end"
                         android:fontFamily="sans-serif" />
+
+                <SeekBar
+                        android:id="@+id/seekBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:progress="0"
+                        android:max="100"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="0dp"
+                        android:thumbTint="#FFFFFF"
+                        android:progressTint="#FFFFFF"
+                        android:backgroundTint="#E0E0E0"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp" />
             </LinearLayout>
 
             <ImageView

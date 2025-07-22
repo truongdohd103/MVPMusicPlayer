@@ -25,7 +25,6 @@
                 android:layout_height="40dp"
                 android:src="@drawable/ic_headphone"
                 android:contentDescription="Headphone Icon"
-                android:tint="#FFFFFF"
                 android:scaleType="centerInside"
                 tools:ignore="UseAppTint" />
 
